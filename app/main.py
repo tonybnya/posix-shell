@@ -72,9 +72,14 @@ def redirect_stderr(command: str, sep: str) -> None:
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
 
-        # write the captured stderr output to the file
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(res.stderr)
+        if sep == " 2> ":
+            # write the captured stderr output to the file
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(res.stderr)
+        elif sep == " 2>> ":
+            # write the captured stderr output to the file
+            with open(file_path, "a", encoding="utf-8") as file:
+                file.write(res.stderr)
 
         # if there's any stdout output, write it to stdout
         if res.stdout:
@@ -113,6 +118,9 @@ def main():
             redirect_stdout(command, sep)
         elif " 2> " in command:
             sep = " 2> "
+            redirect_stderr(command, sep)
+        elif " 2>> " in command:
+            sep = " 2>> "
             redirect_stderr(command, sep)
         elif command.startswith("echo"):
             # print the args
