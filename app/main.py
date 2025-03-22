@@ -21,26 +21,60 @@ def parser(input_: str) -> tuple[str, list[str]]:
 
 def redirect_stdout(command: str, sep: str) -> None:
     """
-    Redirect stdout to a file
+    Redirect stdout to a file.
     """
     part1, to_file = command.split(sep)
-    
-    # Use shlex.split to handle multiple arguments properly
+
+    # use shlex.split to handle multiple arguments properly
     args = shlex.split(part1)
-    cmd = args[0]  # First part is the command
-    
+    # first part is the command
+    cmd = args[0]
+
     try:
-        # Run the command with all arguments and capture the output
+        # run the command with all arguments and capture the output
         res = subprocess.run(args, capture_output=True, text=True)
-        
-        # Write the captured output to the file
+
+        # write the captured output to the file
         with open(to_file.strip(), "w", encoding="utf-8") as file:
             file.write(res.stdout)
-            
-        # If there's any error output, write it to stderr
+
+        # if there's any error output, write it to stderr
         if res.stderr:
             sys.stderr.write(res.stderr)
-            
+
+    except FileNotFoundError as e:
+        sys.stderr.write(f"{cmd}: {e.filename}: No such file or directory\n")
+
+
+def redirect_stderr(command: str, sep: str) -> None:
+    """
+    Redirect stderr to a file.
+    """
+    part1, to_file = command.split(sep)
+
+    # use shlex.split to handle multiple arguments properly
+    args = shlex.split(part1)
+    # first part is the command
+    cmd = args[0]
+
+    try:
+        # run the command with all arguments and capture the output
+        res = subprocess.run(args, capture_output=True, text=True)
+
+        # ensure the directory exists
+        file_path = to_file.strip()
+        directory = os.path.dirname(file_path)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # write the captured stderr output to the file
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(res.stderr)
+
+        # if there's any stdout output, write it to stdout
+        if res.stdout:
+            sys.stdout.write(res.stdout)
+
     except FileNotFoundError as e:
         sys.stderr.write(f"{cmd}: {e.filename}: No such file or directory\n")
 
@@ -66,6 +100,9 @@ def main():
         elif " 1> " in command:
             sep = " 1> "
             redirect_stdout(command, sep)
+        elif " 2> " in command:
+            sep = " 2> "
+            redirect_stderr(command, sep)
         elif command.startswith("echo"):
             # print the args
             if command.startswith("'") and command.endswith("'"):
@@ -96,7 +133,7 @@ def main():
                         PermissionError,
                         NotADirectoryError,
                     ):
-                        # skip directories that don't exist or can't be accessed
+                        # skip directories that doesn't exist or can't be accessed
                         continue
 
             if not command_in_path:
