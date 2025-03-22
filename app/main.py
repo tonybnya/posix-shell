@@ -19,6 +19,32 @@ def parser(input_: str) -> tuple[str, list[str]]:
     return cmd, args
 
 
+def redirect_stdout(command: str, sep: str) -> None:
+    """
+    Redirect stdout to a file
+    """
+    part1, to_file = command.split(sep)
+    
+    # Use shlex.split to handle multiple arguments properly
+    args = shlex.split(part1)
+    cmd = args[0]  # First part is the command
+    
+    try:
+        # Run the command with all arguments and capture the output
+        res = subprocess.run(args, capture_output=True, text=True)
+        
+        # Write the captured output to the file
+        with open(to_file.strip(), "w", encoding="utf-8") as file:
+            file.write(res.stdout)
+            
+        # If there's any error output, write it to stderr
+        if res.stderr:
+            sys.stderr.write(res.stderr)
+            
+    except FileNotFoundError as e:
+        sys.stderr.write(f"{cmd}: {e.filename}: No such file or directory\n")
+
+
 def main():
     """
     Definition of the main app.
@@ -34,6 +60,12 @@ def main():
         if command == "exit 0":
             # exit the program with status code 0
             sys.exit(0)
+        elif " > " in command:
+            sep = " > "
+            redirect_stdout(command, sep)
+        elif " 1> " in command:
+            sep = " 1> "
+            redirect_stdout(command, sep)
         elif command.startswith("echo"):
             # print the args
             if command.startswith("'") and command.endswith("'"):
@@ -105,7 +137,9 @@ def main():
                 print(f"{prg}: command not found")
             else:
                 try:
-                    result = subprocess.run([prg] + args, capture_output=True, text=True)
+                    result = subprocess.run(
+                        [prg] + args, capture_output=True, text=True
+                    )
                     sys.stdout.write(result.stdout)
                     sys.stderr.write(result.stderr)
                 except Exception as e:
