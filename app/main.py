@@ -34,9 +34,14 @@ def redirect_stdout(command: str, sep: str) -> None:
         # run the command with all arguments and capture the output
         res = subprocess.run(args, capture_output=True, text=True)
 
-        # write the captured output to the file
-        with open(to_file.strip(), "w", encoding="utf-8") as file:
-            file.write(res.stdout)
+        if sep == " > " or sep == " 1> ":
+            # write the captured output to the file
+            with open(to_file.strip(), "w", encoding="utf-8") as file:
+                file.write(res.stdout)
+        if sep == " >> " or sep == " 1>> ":
+            # append the captured output to the file
+            with open(to_file.strip(), "a", encoding="utf-8") as file:
+                file.write(res.stdout)
 
         # if there's any error output, write it to stderr
         if res.stderr:
@@ -99,6 +104,12 @@ def main():
             redirect_stdout(command, sep)
         elif " 1> " in command:
             sep = " 1> "
+            redirect_stdout(command, sep)
+        elif " >> " in command:
+            sep = " >> "
+            redirect_stdout(command, sep)
+        elif " 1>> " in command:
+            sep = " 1>> "
             redirect_stdout(command, sep)
         elif " 2> " in command:
             sep = " 2> "
